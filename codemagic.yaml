@@ -1,71 +1,37 @@
 workflows:
-  openim-ios-unsigned:
-    name: OpenIM iOS Demo (unsigned build)
-    max_build_duration: 60
+  ios-build:
+    name: OpenIM iOS Build
+
     instance_type: mac_mini_m2
-    working_directory: Example
+
     environment:
-      vars:
-        XCODE_WORKSPACE: "OpenIMSDKUIKit.xcworkspace"
-        XCODE_SCHEME: "OpenIMSDKUIKit_Example"
       xcode: latest
-      cocoapods: default
 
     scripts:
-      - name: Clean CocoaPods state
+      - name: Install CocoaPods
         script: |
-          rm -rf Pods
-          rm -rf ~/Library/Caches/CocoaPods
-          rm -f Podfile.lock
-      - name: Install CocoaPods dependencies
+          pod repo update
+
+      - name: Install dependencies
         script: |
           pod install
 
-      # The upstream repo never committed a *shared* Xcode scheme for the
-      # main app target, only for its extensions — so xcodebuild has no
-      # scheme to build against. This generates one using the `xcodeproj`
-      # gem, which is already installed as a CocoaPods dependency.
-      - name: Generate missing shared scheme
+      - name: Show projects and schemes
         script: |
-          cat > gen_scheme.rb << 'EOF'
-          require 'xcodeproj'
-          project = Xcodeproj::Project.open('OpenIMSDKUIKit.xcodeproj')
-          target = project.targets.find { |t| t.name == 'OpenIMSDKUIKit_Example' }
-          raise "Target OpenIMSDKUIKit_Example not found" unless target
-          scheme = Xcodeproj::XCScheme.new
-          scheme.add_build_target(target)
-          scheme.set_launch_target(target)
-          scheme.save_as('OpenIMSDKUIKit.xcodeproj', 'OpenIMSDKUIKit_Example', true)
-          EOF
-          ruby gen_scheme.rb
+          find . -name "*.xcworkspace"
+          find . -name "*.xcodeproj"
+          xcodebuild -list
 
-      # No Apple Developer account needed for this step: we build with
-      # code signing turned off entirely. Sideloading tools (AltStore,
-      # SideStore, Sideloadly, etc.) re-sign the .ipa themselves using
-      # your own Apple ID at install time, so an unsigned build is all
-      # you need from CI.
-      - name: Build unsigned .app
+      - name: Build for simulator
         script: |
-          xcodebuild clean build \
-            -workspace "$XCODE_WORKSPACE" \
-            -scheme "$XCODE_SCHEME" \
+          xcodebuild \
+            -project OpenIMSDKUIKit.xcodeproj \
+            -scheme OpenIMSDKUIKit \
             -configuration Release \
-            -sdk iphoneos \
-            -derivedDataPath build \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
-
-      - name: Package unsigned .ipa
-        script: |
-          APP_PATH=$(find build/Build/Products -maxdepth 2 -name "*.app" | head -1)
-          echo "Found app at: $APP_PATH"
-          rm -rf Payload
-          mkdir -p Payload
-          cp -r "$APP_PATH" Payload/
-          zip -r OpenIMSDKUIKit_unsigned.ipa Payload
+            -sdk iphonesimulator \
+            CODE_SIGNING_ALLOWED=NO \
+            build
 
     artifacts:
-      - Example/OpenIMSDKUIKit_unsigned.ipa
-      - Example/build/Build/Products/Release-iphoneos/*.app
-      - /tmp/xcodebuild_logs/*.log
+      - "**/*.app"
+      - "**/*.xcarchive"
