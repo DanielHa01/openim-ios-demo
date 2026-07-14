@@ -29,6 +29,15 @@ workflows:
       - name: Find built app
         script: |
           find ~/Library/Developer/Xcode/DerivedData -name "*.app"
+          
+      - name: Create IPA
+        script: |
+          APP=$(find ~/Library/Developer/Xcode/DerivedData -name "N-DEMO.app" | head -n 1)
+      
+          mkdir Payload
+          cp -R "$APP" Payload/
+      
+          zip -qry N-DEMO.ipa Payload
 
     artifacts:
-      - /Users/builder/Library/Developer/Xcode/DerivedData/**/*.app
+      - N-DEMO.ipa
