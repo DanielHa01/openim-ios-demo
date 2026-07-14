@@ -1,6 +1,6 @@
 workflows:
-  ios-build:
-    name: OpenIM iOS Build
+  inspect-repo:
+    name: Inspect Repository
 
     instance_type: mac_mini_m2
 
@@ -8,30 +8,27 @@ workflows:
       xcode: latest
 
     scripts:
-      - name: Install CocoaPods
+      - name: Show repository structure
         script: |
-          pod repo update
+          pwd
 
-      - name: Install dependencies
-        script: |
-          pod install
-
-      - name: Show projects and schemes
-        script: |
-          find . -name "*.xcworkspace"
+          echo "=== XCODE PROJECTS ==="
           find . -name "*.xcodeproj"
-          xcodebuild -list
 
-      - name: Build for simulator
-        script: |
-          xcodebuild \
-            -project OpenIMSDKUIKit.xcodeproj \
-            -scheme OpenIMSDKUIKit \
-            -configuration Release \
-            -sdk iphonesimulator \
-            CODE_SIGNING_ALLOWED=NO \
-            build
+          echo "=== XCODE WORKSPACES ==="
+          find . -name "*.xcworkspace"
+
+          echo "=== PODFILES ==="
+          find . -name "Podfile"
+
+          echo "=== PACKAGE.SWIFT ==="
+          find . -name "Package.swift"
+
+          echo "=== TOP LEVEL ==="
+          ls -la
+
+          echo "=== FIRST 3 LEVELS ==="
+          find . -maxdepth 3 -type d
 
     artifacts:
-      - "**/*.app"
-      - "**/*.xcarchive"
+      - "**/*"
