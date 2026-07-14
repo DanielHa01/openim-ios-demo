@@ -24,7 +24,7 @@ let sdkAPIRoute = "/api"
 let sdkWSPort = ":10001"
 let sdkWSRoute = "/msg_gateway"
 
-let defaultHost = "your-server-ip"
+let defaultHost = "171.244.173.176"
 
 let discoverPageURL = "https://docs.openim.io/"
 let allowSendMsgNotFriend = "1"
