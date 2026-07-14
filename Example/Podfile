@@ -138,12 +138,13 @@ post_install do |installer|
      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
      # any other existing build_settings assignments here
    end
-   target.build_phases.each do |phase|
-     next unless phase.is_a?(Xcodeproj::Project::Object::PBXResourcesBuildPhase)
-     phase.files.each do |build_file|
-       file_ref = build_file.file_ref
-       if file_ref && file_ref.path.to_s.end_with?('.swift')
-         phase.remove_file_reference(file_ref)
+
+  target.build_phases.each do |phase|
+    next unless phase.is_a?(Xcodeproj::Project::Object::PBXResourcesBuildPhase)
+    phase.files.each do |build_file|
+      file_ref = build_file.file_ref
+      if file_ref && file_ref.path.to_s.end_with?('.swift')
+        phase.remove_file_reference(file_ref)
       end
     end
   end
