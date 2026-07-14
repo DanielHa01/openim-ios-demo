@@ -103,23 +103,18 @@ post_install do |installer|
 
   Dir.glob('Pods/Target Support Files/**/*.xcconfig').each do |xcconfig_path|
     next unless File.file?(xcconfig_path)
-
     content = File.read(xcconfig_path)
     cleaned = content
     cleaned = cleaned.lines.reject { |line| line.include?('EXCLUDED_ARCHS[sdk=iphonesimulator*]') }.join
-
     simulator_xcconfig_removals.each_key do |setting|
       cleaned = cleaned.lines.reject { |line| line.start_with?("#{setting}[sdk=iphonesimulator*] =") }.join
     end
-
     simulator_xcconfig_removals.each do |setting, fragments|
       next unless cleaned.include?("#{setting} =")
-
       rewritten_lines = []
       cleaned.each_line do |line|
         rewritten_lines << line
         next unless line.start_with?("#{setting} =")
-
         sim_line = line.sub("#{setting} =", "#{setting}[sdk=iphonesimulator*] =")
         sim_line = sim_line.sub('$(inherited) ', '').sub('$(inherited)', '')
         fragments.each do |fragment|
@@ -130,7 +125,23 @@ post_install do |installer|
       end
       cleaned = rewritten_lines.join
     end
-
     File.write(xcconfig_path, cleaned) if cleaned != content
+  end
+
+  # Strip stray .swift file references from Copy Bundle Resources build
+  # phases across all Pod targets. CocoaPods/Xcode occasionally mis-adds
+  # source files to a resources phase (seen with MMBAlertsPickers), which
+  # fails the build with "cannot be processed by a Copy Bundle Resources
+  # build phase".
+  installer.pods_project.targets.each do |target|
+    target.build_phases.each do |phase|
+      next unless phase.is_a?(Xcodeproj::Project::Object::PBXResourcesBuildPhase)
+      phase.files.each do |build_file|
+        file_ref = build_file.file_ref
+        if file_ref && file_ref.path.to_s.end_with?('.swift')
+          phase.remove_file_reference(file_ref)
+        end
+      end
+    end
   end
 end
