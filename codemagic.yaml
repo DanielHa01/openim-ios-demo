@@ -12,6 +12,11 @@ workflows:
       cocoapods: default
 
     scripts:
+      - name: Clean CocoaPods state
+        script: |
+          rm -rf Pods
+          rm -rf ~/Library/Caches/CocoaPods
+          rm -f Podfile.lock
       - name: Install CocoaPods dependencies
         script: |
           pod install
