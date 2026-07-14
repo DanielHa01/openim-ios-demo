@@ -1,6 +1,37 @@
 workflows:
-  inspect-repo:
-    - name: List schemes
-  script: |
-    cd Example
-    xcodebuild -list -workspace OpenIMSDKUIKit.xcworkspace
+  openim-build:
+    name: OpenIM Unsigned Build
+
+    instance_type: mac_mini_m2
+
+    environment:
+      xcode: latest
+
+    scripts:
+      - name: Install Pods
+        script: |
+          cd Example
+          pod repo update
+          pod install
+
+      - name: Show schemes
+        script: |
+          cd Example
+          xcodebuild -list -workspace OpenIMSDKUIKit.xcworkspace
+
+      - name: Build unsigned
+        script: |
+          cd Example
+
+          xcodebuild \
+            -workspace OpenIMSDKUIKit.xcworkspace \
+            -scheme OpenIMSDKUIKit \
+            -configuration Release \
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+    artifacts:
+      - Example/**/*.app
+      - Example/**/*.xcarchive
